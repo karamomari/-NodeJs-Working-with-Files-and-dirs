@@ -1,94 +1,66 @@
+const apiUrl = 'http://localhost:3000/api';
 
-
-alert("soso")
-
-const apiURL = "http://localhost:3000/api";
-
-// read file
-
+// Read file
 async function readFile() {
-  const filename = document.getElementById("readFileName").values;
-
-  const response = await fetch(`${apiURL}/read?fileName=${filename}`);
-
+  const fileName = document.getElementById('readFileName').value;
+  const response = await fetch(`${apiUrl}/read?fileName=${fileName}`);
   const data = await response.json();
-
-  document.getElementById("readContent").textContent =
-    data.content || data.error;
+  document.getElementById('readContent').textContent = data.content || data.error;
 }
 
-// write file
-
+// Write file
 async function writeFile() {
-  const filename = document.getElementById("writeFileName").values;
-
-  const content = document.getElementById("writeContent").values;
-
-  await fetch(`${apiURL}/write`, {
-    method: "POST",
-    headers: { "content-type": "application-json" },
-    body: JSON.stringify({ filename, content }),
+  const fileName = document.getElementById('writeFileName').value;
+  const content = document.getElementById('writeContent').value;
+  await fetch(`${apiUrl}/write`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fileName, content })
   });
 }
 
-// append file
-
+// Append file
 async function appendFile() {
-  const filename = document.getElementById("appendFileName").values;
-
-  const content = document.getElementById("appendContent").values;
-
-  await fetch(`${apiURL}/append`, {
-    method: "POST",
-    headers: { "content-type": "application-json" },
-    body: JSON.stringify({ filename, content }),
+  const fileName = document.getElementById('appendFileName').value;
+  const content = document.getElementById('appendContent').value;
+  await fetch(`${apiUrl}/append`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fileName, content })
   });
 }
 
-// delete file
-
+// Delete file
 async function deleteFile() {
-  const filename = document.getElementById("deleteFileName").values;
+  const fileName = document.getElementById('deleteFileName').value;
+  await fetch(`${apiUrl}/delete?fileName=${fileName}`, { method: 'DELETE' });
 
-  await fetch(`${apiURL}/delete?filename=${filename}`, {
-    method: "DELETE",
-  });
+ 
 }
 
-// rename file
-
+// Rename file
 async function renameFile() {
-  const oldValue = document.getElementById("oldFileName").values;
-
-  const newValue = document.getElementById("newFileName").values;
-
-  await fetch(`${apiURL}/rename`, {
-    method: "PUT",
-    headers: { "content-type": "application-json" },
-    body: JSON.stringify({ oldValue, newValue }),
+  const oldName = document.getElementById('oldFileName').value;
+  const newName = document.getElementById('newFileName').value;
+  await fetch(`${apiUrl}/rename`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ oldName, newName })
   });
 }
 
-// create directory
-
+// Create directory
 async function createDirectory() {
-  const dirName = document.getElementById("createDirName").values;
-
-  await fetch(`${apiURL}/create-dir`, {
-    method: "POST",
-    headers: { "content-type": "application-json" },
-    body: JSON.stringify({ dirName }),
+  const dirName = document.getElementById('createDirName').value;
+  await fetch(`${apiUrl}/create-dir`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ dirName })
   });
 }
 
-// delete directory
-
-
-
+// Delete directory
 async function deleteDirectory() {
-    const dirname = document.getElementById("deleteDirName").values;
-  
-    await fetch(`${apiURL}/delete-dir?=${dirname}`, {
-      method: "DELETE",
-    });
-  }
+  const dirName = document.getElementById('deleteDirName').value;
+  await fetch(`${apiUrl}/delete-dir?dirName=${dirName}`, { method: 'DELETE' });
+}
