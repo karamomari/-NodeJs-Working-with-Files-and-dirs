@@ -5,28 +5,88 @@ const path = require('path');
 const router = express.Router();
 
 // Helper function to get absolute file path (prevents path traversal attacks)
-const getFilePath = (fileName) => path.join(__dirname, '..', 'storage', path.basename(fileName));
+// const getFilePath = (fileName) => path.join(__dirname, '..', 'storage', path.basename(fileName));
+const getFilePath = (fileName) => path.join(__dirname, '..', 'storage', 'json', path.basename(fileName));
+
+
+
 
 router.get('/read', async (req, res) => {
   try {
-    const data = await fs.readFile(getFilePath(req.query.fileName), 'utf8');
-    res.json({ content: data });
+    const fileName = req.query.fileName;
+    const filePath = getFilePath(fileName);
+
+
+    if (path.extname(fileName).toLowerCase() !== '.json') {
+      return res.status(400).json({ error: 'Only JSON files are allowed' });
+    }
+
+    const data = await fs.readFile(filePath, 'utf8');
+
+    if (!data.trim()) {
+      return res.status(400).json({ error: 'File is empty or invalid JSON' });
+    }
+
+    try {
+      const jsonData = JSON.parse(data);
+      res.json({ content: jsonData });
+    } catch (err) {
+      return res.status(400).json({ error: 'Invalid JSON format' });
+    }
+
   } catch (err) {
-    res.status(404).json({ error: 'File not found' });
+    console.error('Error:', err);
+    res.status(404).json({ error: 'File not found or cannot be accessed' });
   }
 });
+
+
+
+
+
 router.post('/append', async (req, res) => {
   const { fileName, content } = req.body;
+
   try {
-    await fs.appendFile(getFilePath(fileName), content, 'utf8');
-    res.json({ message: 'Content appended successfully' });
+    if (path.extname(fileName).toLowerCase() !== '.json') {
+      return res.status(400).json({ error: 'Only JSON files are allowed' });
+    }
+    const filePath = getFilePath(fileName);
+    let jsonData = {};
+
+    try {
+      const fileContent = await fs.readFile(filePath, 'utf8');
+      jsonData = JSON.parse(fileContent);
+    } catch (error) {
+      if (error.code !== 'ENOENT') {
+        return res.status(500).json({ error: 'Error reading file' });
+      }
+    }
+
+    let newContent = JSON.parse(content);;
+
+
+    const merged = { ...jsonData, ...newContent };
+
+    await fs.writeFile(filePath, JSON.stringify(merged, null, 2), 'utf8');
+
+    res.json({ message: 'Content appended successfully', data: merged });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
+
+
+
+
 router.put('/rename', async (req, res) => {
   const { oldName, newName } = req.body;
+
+
+  if (path.extname(oldName).toLowerCase() !== '.json' || path.extname(newName).toLowerCase() !== '.json') {
+    return res.status(400).json({ error: 'Only JSON files are allowed' });
+  }
 
   if (!oldName || !newName) {
     return res.status(400).json({ error: 'Both old and new file names are required' });
@@ -46,6 +106,53 @@ router.put('/rename', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+
+
+router.post('/write', async (req, res) => {
+  const { fileName, content } = req.body;
+
+  if (!fileName.endsWith('.json')) {
+    return res.status(400).json({ error: 'Only JSON files are allowed' });
+  }
+
+  try {
+    const jsonObject = typeof content === 'string' ? JSON.parse(content) : content;
+
+    const jsonContent = JSON.stringify(jsonObject, null, 2);
+
+    await fs.writeFile(getFilePath(fileName), jsonContent, 'utf8');
+    res.json({ message: 'File written successfully' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
+
+
+router.delete('/delete', async (req, res) => {
+  try {
+    const { fileName } = req.query;
+    if (!fileName) {
+      return res.status(400).json({ error: 'File name is required' });
+    }
+
+    if (!fileName.endsWith('.json')) {
+      return res.status(400).json({ error: 'Only JSON files are allowed' });
+    }
+    await fs.unlink(getFilePath(req.query.fileName));
+    res.json({ message: 'File deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
+
+
+
+
 
 router.post('/create-dir', async (req, res) => {
   const { dirName } = req.body;
@@ -83,14 +190,7 @@ router.delete('/delete-dir', async (req, res) => {
 });
 
 
-router.post('/write', async (req, res) => {
-  try {
-    await fs.writeFile(getFilePath(req.body.fileName), req.body.content, 'utf8');
-    res.json({ message: 'File written successfully' });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+
 
 router.delete('/delete', async (req, res) => {
   try {
